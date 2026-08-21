@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atk.dev/schemas/state.json",
+  "title": "atk 链接托管状态（仅用户级 ~/.config/atk/state.json，M2 起无项目级 state）",
+  "description": "记录 atk 创建的每条链接，支撑安全增删（仅动自己的链接）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "links"],
+  "properties": {
+    "version": { "const": 1 },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "client", "targetPath", "sourcePath", "collection", "profileHash"],
+        "properties": {
+          "kind": { "enum": ["skill", "shared-resource", "dependency"] },
+          "client": { "enum": ["claude", "opencode", "cc-switch", "codex", "dsh"] },
+          "targetPath": { "type": "string" },
+          "sourcePath": { "type": "string" },
+          "collection": { "type": "string" },
+          "ownerSkill": { "type": ["string", "null"] },
+          "profileHash": { "type": "string" }
+        }
+      }
+    }
+  }
+}

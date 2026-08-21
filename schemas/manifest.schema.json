@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atk.dev/schemas/manifest.json",
+  "title": "atk 集合 manifest（<集合根>/atk.manifest.json）",
+  "description": "sharedResources 缺失=警告（可选）；dependencies 缺失=规划失败（必需）。无 manifest 时技能按自包含处理。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sharedResources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path"],
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    }
+  }
+}

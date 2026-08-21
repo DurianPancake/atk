@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atk.dev/schemas/collections.json",
+  "title": "atk 用户级集合注册表（~/.config/atk/collections.json）",
+  "description": "注册全部 git/local 技能集合；数组顺序为 priority 相等时的稳定次级排序。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "collections"],
+  "properties": {
+    "version": { "const": 1 },
+    "collections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "type", "scope", "enabled", "priority"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "type": { "enum": ["git", "local"] },
+          "url": { "type": "string" },
+          "path": { "type": "string" },
+          "scope": { "enum": ["global", "scoped"] },
+          "enabled": { "type": "boolean" },
+          "tag": { "enum": ["team", "personal"] },
+          "priority": { "type": "integer" },
+          "branch": { "type": "string" },
+          "registeredAt": { "type": "string" }
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disabled"],
+      "properties": {
+        "disabled": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

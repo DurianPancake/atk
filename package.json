@@ -1,0 +1,32 @@
+{
+  "name": "atk",
+  "version": "0.1.0",
+  "description": "技能集合仓库管理与用户级安装/卸载工具（零运行时依赖 CLI）：集合注册、scope 模型启停、apply 软链到各 AI 客户端用户级技能目录（Claude Code/OpenCode/CC Switch/Codex/DSH）。",
+  "type": "module",
+  "bin": {
+    "atk": "./bin/atk.js"
+  },
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "schemas"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "skills",
+    "ai-agent",
+    "claude",
+    "opencode",
+    "codex",
+    "dsh"
+  ],
+  "license": "MIT"
+}
