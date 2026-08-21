@@ -1,141 +1,141 @@
-# atk — 技能集合管理工具（用户级安装/卸载）
+# atk — Skill Collection Management (user-level install/uninstall)
 
-`atk` 是一个独立、零运行时依赖的 CLI，做两件事：**技能集合的仓库管理** + **按 scope 模型把启用的集合安装/卸载到本机 AI 客户的用户级技能目录**。
+`atk` is a standalone, zero-runtime-dependency CLI that does two things: **manages skill-collection repositories** and **installs/uninstalls enabled collections into the user-level skill directories of your local AI clients**, following a scope model.
 
-- **集合（collection）** = git 仓库或本地目录，内容契约 `skills/<name>/SKILL.md`（可选 `atk.manifest.json` 声明依赖/共享资源）
-- **scope 安装模型**：`scope` 只决定 add 时的默认值与自动安装行为——`global` 注册即装（`enabled=true`）；`scoped` 注册后默认停用（`enabled=false`，需手动 `enable` 后 `apply` 才装）
-- **用户级唯一层解析**：所有 enabled 集合按 `priority` 归并，同名技能 = 高 priority 胜出（仅装胜出者）；`status` 报告被覆盖项
-- **边界**：只操作**用户级**目录（无项目级安装/无项目声明 `.atk.json`/无分层解析）；不写入项目上下文（AGENTS.md 属独立方案）；不生产技能内容
-- 配置为纯 JSON（`~/.config/atk/collections.json` + 用户级 `~/.config/atk/state.json`），跨机器可复制，`atk sync` 还原
+- **Collection** = a git repository or local directory whose content contract is `skills/<name>/SKILL.md` (optional `atk.manifest.json` declaring dependencies/shared resources)
+- **Scope install model**: `scope` only decides the default at `add` and auto-install behavior — `global` registers and installs immediately (`enabled=true`); `scoped` registers but stays disabled (`enabled=false`, install only after an explicit `enable` + `apply`)
+- **User-level single-layer resolution**: all enabled collections are merged by `priority`; on a same-name conflict the higher `priority` wins (only the winner is installed); `status` reports overridden skills
+- **Boundaries**: operates on **user-level** directories only (no project-level install / no project `.atk.json` / no layered resolution); never writes project context (AGENTS.md is a separate approach); never produces skill content
+- Config is plain JSON (`~/.config/atk/collections.json` + user-level `~/.config/atk/state.json`), copyable across machines; `atk sync` restores
 
-## 安装
+## Install
 
-**手动安装**（推荐）：
+**Manual install** (recommended):
 
 ```bash
-npm install -g atk            # npm 发布后，任意目录
-# 源码方式（在本仓库根目录执行）：
-npm install -g .              # 或：git clone 本仓库后 npm install -g <仓库路径>
+npm install -g atk            # after npm publish, from anywhere
+# from source (run in this repository root):
+npm install -g .              # or: git clone this repo && npm install -g <repo path>
 atk --version
 ```
 
-要求 Node ≥ 18。atk 不依赖任何第三方包，也不读取任何其他工具的配置。
+Requires Node ≥ 18. atk depends on no third-party packages and reads no other tool's configuration.
 
-**与 ai-toolkit 集成（可选）**：在装有 ai-toolkit 的机器上执行 `node setup.js --install-atk`，可自动注册官方集合、迁移旧配置并托管（详见 ai-toolkit 仓库）。
+**ai-toolkit integration (optional)**: on a machine with ai-toolkit, run `node setup.js --install-atk` to auto-register the official collection, migrate legacy config, and hand over management (see the ai-toolkit repo).
 
-## 快速上手
+## Quick Start
 
-**第 1 步：注册集合**（git 地址或本地目录均可）
+**Step 1 — register a collection** (git URL or local directory both work):
 
 ```bash
-atk collection add ~/my-skills --name my-skills --scope global      # global：注册即装
-atk collection add https://github.com/your/skills.git --name team-x # 缺省 scoped：需 enable 才装
+atk collection add ~/my-skills --name my-skills --scope global      # global: installs on register
+atk collection add https://github.com/your/skills.git --name team-x # default scoped: enable to install
 ```
 
-> `~/.atk/personal/` 若存在会自动作为名为 `personal` 的 scoped 集合参与（隐式，不写注册表），也需要 enable 才装。
+> `~/.atk/personal/`, if present, automatically participates as a `personal` scoped collection (implicit — not written to the registry); it also needs `enable` before install.
 
-**第 2 步：查看**
+**Step 2 — inspect:**
 
 ```bash
 atk collection list
-atk status          # 纯只读：已注册集合 / 生效集 / 可启用 / 同名冲突 / 全量视图
-atk status --json   # 供脚本/AI 使用；含 registered 全量视图（每个已注册集合 × 技能明细，无论是否启用）
+atk status          # read-only: registered collections / effective set / enabled / name conflicts / full view
+atk status --json   # for scripts/AI; includes the `registered` full view (every registered collection × skill detail, enabled or not)
 ```
 
-**第 3 步：启用 / 停用（= 安装 / 卸载）**
+**Step 3 — enable / disable (= install / uninstall):**
 
 ```bash
-atk collection enable team-x      # 标记启用（下次 apply 生效）
-atk collection disable team-x     # 标记停用（apply 时按安全规则清理链接）
+atk collection enable team-x      # mark enabled (takes effect at next apply)
+atk collection disable team-x     # mark disabled (apply cleans links under safety rules)
 ```
 
-**第 4 步：应用**（真正写盘；enable/disable 后需要这一步才生效）
+**Step 4 — apply** (writes to disk; required after any enable/disable):
 
 ```bash
-atk apply --dry-run   # 先预览将要创建的软链与清理项（零写入）
-atk apply             # 正式应用：生效集软链到 5 个客户端的用户级目录
+atk apply --dry-run   # preview links to create and items to clean (zero writes)
+atk apply             # apply: symlink the effective set into the 5 clients' user-level dirs
 ```
 
-应用后回到你的 AI 客户端即可生效（详见「客户端矩阵」）。
+Back to your AI client after applying (see Client Matrix).
 
-## 统一管理（TUI，推荐日常使用）
+## Unified Management (TUI, recommended for daily use)
 
-安装了 ai-toolkit（`node setup.js --install-atk` 后，或在装有 ai-toolkit 的机器上）时，`node setup.js --skills` 是图形化统一管理入口，覆盖上述全部启停操作：
+With ai-toolkit installed (`node setup.js --install-atk`, or on any machine that has it), `node setup.js --skills` is the graphical unified management entry covering all operations above:
 
-1. **编码规范**：单选 V5 / V8 / Comi（ai-toolkit 侧逻辑，atk 不管 bestPractices）；
-2. **集合面板**：所有**已注册集合**（官方/个人/任意 scope，含停用集合）一键 enable/disable；个人库 `~/.atk/personal/` 也在此开关；行内标注 scope/技能数/目录缺失；
-3. **技能面板**：Enter 时光标所在集合 → **自动聚焦该集合**的技能（过滤词 = 集合名，Backspace 清空看全量）；取消勾选 = 全局停用（与 `atk defaults disable` 同语义），保存后自动 `atk apply`。
+1. **Best practices**: pick one of V5 / V8 / Comi (ai-toolkit-side logic; atk does not manage bestPractices);
+2. **Collection panel**: one-click enable/disable for every **registered collection** (official/personal/any scope, including disabled ones); your personal library `~/.atk/personal/` is toggled here too; inline shows scope/skill count/missing directory;
+3. **Skill panel**: Enter on a collection → **auto-focuses that collection's skills** (filter word = collection name; Backspace clears to see all); unchecking = global disable (same semantics as `atk defaults disable`); auto-runs `atk apply` on save.
 
-级联关系：集合级开关 = `atk collection enable/disable`（生效=整集合安装/卸载）；技能级 = `atk defaults disable/enable`（生效=精确停用单个技能名）。非 TTY（CI/脚本/未安装 atk）自动降级为纯委托，无交互不卡住。
+Cascade: collection-level toggle = `atk collection enable/disable` (effect = install/uninstall the whole collection); skill-level = `atk defaults disable/enable` (effect = fine-grained disable of a single skill name). Non-TTY (CI/scripts/atk missing) degrades gracefully to plain delegation — no interaction, no hangs.
 
-## 典型业务场景
+## Typical Use Cases
 
-**场景 1：官方基线 + 团队/个人集合**
+**Case 1 — official baseline + team/personal collections**
 
 ```bash
-atk collection add <官方仓库> --scope global --name official-skills   # 全员基线，注册即装
-atk collection add <团队仓库> --scope scoped --name team-skills       # 按需 enable
-atk collection add ~/my-skills --scope scoped --name personal         # 个人技能（~/.atk/personal/ 亦可自动识别）
+atk collection add <official repo> --scope global --name official-skills  # org baseline, installs on register
+atk collection add <team repo>    --scope scoped --name team-skills       # enable on demand
+atk collection add ~/my-skills    --scope scoped --name personal          # personal skills (or auto-detected ~/.atk/personal/)
 atk collection enable team-skills && atk collection enable personal
-atk status                                                             # 查看解析来源与冲突
+atk status                                                               # inspect resolution & conflicts
 ```
 
-**场景 2：同名技能接管（优先级控制）**
+**Case 2 — same-name takeover (priority control)**
 
-两个 enabled 集合都含 `coding` 时，高 `priority` 者胜出并安装；`status` 会报告被覆盖项。禁用高优先级集合后，`apply` 会把链接重指到新胜出者：
+When two enabled collections both contain `coding`, the higher `priority` wins and is installed; `status` reports the overridden item. After disabling the higher-priority collection, `apply` re-points the link to the new winner:
 
 ```bash
-atk collection add A --scope global --priority 100   # A 的 coding 胜出
-atk collection add B --scope global --priority 200   # B 的 coding 胜过 A
-atk collection disable B && atk apply                # 链接重指回 A 的 coding
+atk collection add A --scope global --priority 100   # A's coding wins
+atk collection add B --scope global --priority 200   # B's coding beats A
+atk collection disable B && atk apply                # link re-points back to A's coding
 ```
 
-**场景 3：新成员/新机器一键还原**
+**Case 3 — one-shot restore for new members / new machines**
 
 ```bash
 npm install -g atk
-cp ~/.config/atk/collections.json <新机对应位置>   # 纯 JSON，复制即还原注册表
-atk sync                                          # git 集合自动克隆 + 应用，技能布局一键还原
+cp ~/.config/atk/collections.json <new machine equivalent>   # plain JSON, copy restores registry
+atk sync          # auto-clone git collections + apply, one-shot layout restore
 ```
 
-**场景 4：团队技能持续更新自动生效**
+**Case 4 — team skills stay current automatically**
 
 ```bash
-atk sync    # fetch + ff-only 拉取全部 git 集合并重新应用；dirty 工作区自动跳过、断网用本地旧版兜底
+atk sync    # fetch + ff-only pull of all git collections and re-apply; dirty workspaces skipped; offline falls back to last local copy
 ```
 
-## 命令一览
+## Command Reference
 
-| 命令 | 说明 |
-|------|------|
-| `atk status [--json]` | 状态快照（纯只读；`--json` 供脚本/AI 使用，`registered` 字段为**全量视图**：每个已注册集合 × 技能明细 × 启停/scope，无论集合是否启用） |
-| `atk apply [--dry-run]` | 两阶段应用:先规划校验（零写入），再执行（幂等、部分失败可收敛） |
-| `atk sync [--no-apply]` | 拉取全部 git 集合（fetch + ff-only；dirty/detached 跳过）并重新应用 |
-| `atk collection add <git-url\|路径> [--scope] [--name] [--priority] [--branch]` | 注册集合（git 型克隆到 `~/.atk/collections/<name>/`；global 注册即装，scoped 默认停用） |
-| `atk collection remove/enable/disable/list/export` | 集合生命周期管理（启停支持 `--dry-run` 预览；enable=安装、disable=卸载） |
-| `atk defaults disable\|enable <技能>` | **全局按名停用/启用**：在全部 enabled 集合归并后按技能名删除/恢复，与来源无关（官方与个人库同名技能会一并停用）；集合整体开关用 `atk collection enable/disable` |
-| `atk validate collection <目录>` | 集合健康检查：结构/断链/必需依赖/未知 schema，按级别输出 |
+| Command | Description |
+|---------|-------------|
+| `atk status [--json]` | State snapshot (read-only; `--json` for scripts/AI; `registered` is the **full view**: every registered collection × skill detail × on/off + scope, enabled or not) |
+| `atk apply [--dry-run]` | Two-phase apply: plan/validate first (zero writes), then execute (idempotent, partial failures converge on re-run) |
+| `atk sync [--no-apply]` | Pull all git collections (fetch + ff-only; dirty/detached skipped) and re-apply |
+| `atk collection add <git-url\|path> [--scope] [--name] [--priority] [--branch]` | Register a collection (git type clones to `~/.atk/collections/<name>/`; global installs on register, scoped defaults to disabled) |
+| `atk collection remove/enable/disable/list/export` | Collection lifecycle (enable/disable support `--dry-run` preview; enable=install, disable=uninstall) |
+| `atk defaults disable\|enable <skill>` | **Global per-name disable/enable**: after merging all enabled collections, delete/restore by skill name, regardless of origin (official and personal same-name skills disable together); turn whole collections on/off with `atk collection enable/disable` |
+| `atk validate collection <dir>` | Collection health check: structure/broken links/required dependencies/unknown schema, leveled output |
 
-## 客户端矩阵（仅用户级）
+## Client Matrix (user-level only)
 
-| 客户端 | 用户级目录 |
-|--------|-----------|
+| Client | User-level directory |
+|--------|----------------------|
 | Claude Code | `~/.claude/skills` |
 | OpenCode | `~/.config/opencode/skill` |
 | CC Switch | `~/.cc-switch/skills` |
 | Codex | `~/.agents/skills` |
 | DSH | `~/.dsh/skills` |
 
-同名技能按「高 priority 胜出」解析：每个目录只装解析胜出者的链接；atk 不承诺客户端去重（各客户端以自身加载行为为准）。
+Same-name resolution follows "higher priority wins": each directory only gets the winner's link; atk does not promise per-client dedup (each client uses its own loading behavior.
 
-## 集合内容契约
+## Collection Content Contract
 
 ```
 my-skills/
 ├── skills/
-│   ├── alpha/SKILL.md            # 技能：frontmatter 需含 name
+│   ├── alpha/SKILL.md            # skill: frontmatter must contain name
 │   └── beta/SKILL.md
-└── atk.manifest.json             # 可选：依赖与共享资源声明
+└── atk.manifest.json             # optional: dependencies & shared resources
 ```
 
 ```json
@@ -145,19 +145,19 @@ my-skills/
 }
 ```
 
-- `dependencies` 缺失 = 必需依赖缺失 → apply 规划失败（零写入）
-- `sharedResources` 缺失 = 可选 → 警告继续
+- missing `dependencies` = required dependency missing → apply plan fails (zero writes)
+- missing `sharedResources` = optional → warning, continue
 
-## 安全
+## Safety
 
-- 只删除 atk 自己创建的软链：state 记录 + `readlink` 词法判定（目标存在时 realpath 复核，断链可清理）；用户手放内容永不删除
-- apply 两阶段：规划校验失败零写入；执行部分失败只记录已完成，再次 apply 收敛
-- 注册表/state 写入：临时文件 + rename 原子替换
-- sync 非交互（不等待凭据输入）、60s 超时、进程锁防并发
+- Deletes only symlinks atk created: state record + `readlink` lexical check (realpath verify when target exists; broken links can be cleaned); user-created files are never deleted
+- Two-phase apply: plan validation failures = zero writes; partial execution failures record only the completed items, next apply converges
+- Registry/state writes: temp file + rename atomic replace
+- sync is non-interactive (never waits for credentials), 60s timeout, process lock against concurrency
 
-## 常见问题
+## FAQ
 
-- **scoped 集合 add 后没生效**：M3 起 scoped 注册是「停用」状态，需 `atk collection enable <name>` 再 `atk apply`。
-- **想只停官方某个技能、保留个人库同名技能**：停用是全局按名的（`defaults disable` 会连 personal 版一起停，`collection disable` 会整集合停）。同名时由 priority 控制谁生效：个人库 priority 高于官方（默认 p2 > p1），官方版自动让位，无需停用。
-- **技能被上游删除成断链**：disable/remove 该集合时按词法判定清理，不会因链接失效卡死。
-- **同名技能装哪个**：所有 enabled 集合按 priority 归并，高 priority 者胜出（只装胜出者）；`atk status` 可查看解析来源与冲突。
+- **Scoped collection not effective after add**: since M3, scoped registration means "disabled" — run `atk collection enable <name>` then `atk apply`.
+- **Want to disable official skill but keep the same-name personal one**: disable is global by name (`defaults disable` kills the personal version too; `collection disable` kills the whole collection). Same-name selection is controlled by priority: the personal library's priority is higher than official (default p2 > p1), so the official one yields automatically — no disabling needed.
+- **Skills deleted upstream cause broken links**: lexical cleanup on disable/remove; won't hang even with invalid links.
+- **Which same-name skill is installed**: merge all enabled collections by priority; higher wins (only the winner is installed); `atk status` shows source and conflicts.
